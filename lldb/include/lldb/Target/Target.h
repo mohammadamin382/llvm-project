@@ -1519,7 +1519,7 @@ public:
   typedef std::shared_ptr<StopHook> StopHookSP;
 
   /// Add an empty stop hook to the Target's stop hook list, and returns a
-  /// shared pointer to it in new_hook.
+  /// shared pointer to the new hook.
   StopHookSP CreateStopHook(StopHook::StopHookKind kind, bool internal = false);
 
   /// If you tried to create a stop hook, and that failed, call this to
