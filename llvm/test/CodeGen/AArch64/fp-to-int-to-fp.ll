@@ -134,7 +134,66 @@ entry:
   ret float %f
 }
 
+define i1 @test_fcmp(float %x) {
+; CHECK-LABEL: test_fcmp:
+; CHECK:       // %bb.0:
+; CHECK-NEXT:    frintz s0, s0
+; CHECK-NEXT:    fcmp s0, #0.0
+; CHECK-NEXT:    cset w0, eq
+; CHECK-NEXT:    ret
+;
+; NO-SIGNED-ZEROS-LABEL: test_fcmp:
+; NO-SIGNED-ZEROS:       // %bb.0:
+; NO-SIGNED-ZEROS-NEXT:    frintz s0, s0
+; NO-SIGNED-ZEROS-NEXT:    fcmp s0, #0.0
+; NO-SIGNED-ZEROS-NEXT:    cset w0, eq
+; NO-SIGNED-ZEROS-NEXT:    ret
+  %conv1 = fptosi float %x to i32
+  %conv2 = sitofp i32 %conv1 to float
+  %cmp = fcmp oeq float %conv2, 0.0
+  ret i1 %cmp
+}
+
+define float @test_fadd(float %x) {
+; CHECK-LABEL: test_fadd:
+; CHECK:       // %bb.0:
+; CHECK-NEXT:    frintz s0, s0
+; CHECK-NEXT:    fmov s1, #1.00000000
+; CHECK-NEXT:    fadd s0, s0, s1
+; CHECK-NEXT:    ret
+;
+; NO-SIGNED-ZEROS-LABEL: test_fadd:
+; NO-SIGNED-ZEROS:       // %bb.0:
+; NO-SIGNED-ZEROS-NEXT:    frintz s0, s0
+; NO-SIGNED-ZEROS-NEXT:    fmov s1, #1.00000000
+; NO-SIGNED-ZEROS-NEXT:    fadd s0, s0, s1
+; NO-SIGNED-ZEROS-NEXT:    ret
+  %conv1 = fptosi float %x to i32
+  %conv2 = sitofp i32 %conv1 to float
+  %add = fadd float %conv2, 1.0
+  ret float %add
+}
+
+define float @test_fabs(float %x) {
+; CHECK-LABEL: test_fabs:
+; CHECK:       // %bb.0:
+; CHECK-NEXT:    frintz s0, s0
+; CHECK-NEXT:    fabs s0, s0
+; CHECK-NEXT:    ret
+;
+; NO-SIGNED-ZEROS-LABEL: test_fabs:
+; NO-SIGNED-ZEROS:       // %bb.0:
+; NO-SIGNED-ZEROS-NEXT:    frintz s0, s0
+; NO-SIGNED-ZEROS-NEXT:    fabs s0, s0
+; NO-SIGNED-ZEROS-NEXT:    ret
+  %conv1 = fptosi float %x to i32
+  %conv2 = sitofp i32 %conv1 to float
+  %abs = call float @llvm.fabs.f32(float %conv2)
+  ret float %abs
+}
+
 declare i32 @llvm.smin.i32(i32, i32)
 declare i32 @llvm.smax.i32(i32, i32)
 declare i32 @llvm.umin.i32(i32, i32)
 declare i32 @llvm.umax.i32(i32, i32)
+declare float @llvm.fabs.f32(float)
