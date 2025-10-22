@@ -18871,37 +18871,6 @@ SDValue DAGCombiner::visitFPOW(SDNode *N) {
 
   return SDValue();
 }
-/// Check if a use of a floating-point operation doesn't care about the sign of
-/// zero. This allows us to optimize (sitofp (fptosi x)) -> ftrunc(x) even
-/// without NoSignedZerosFPMath, as long as all uses are sign-insensitive.
-static bool isSignInsensitiveUse(SDNode *Use, unsigned OperandNo,
-                                 SelectionDAG &DAG) {
-  switch (Use->getOpcode()) {
-  case ISD::SETCC:
-    // Comparisons: IEEE 754 specifies +0.0 == -0.0.
-  case ISD::FABS:
-    // fabs always produces +0.0.
-    return true;
-  case ISD::FADD:
-  case ISD::FSUB: {
-    // Arithmetic with non-zero constants fixes the uncertainty around the sign
-    // bit.
-    SDValue Other = Use->getOperand(1 - OperandNo);
-    return DAG.isKnownNeverZeroFloat(Other);
-  }
-  default:
-    return false;
-  }
-}
-
-/// Check if all uses of a value are insensitive to the sign of zero.
-static bool allUsesSignInsensitive(SDValue V, SelectionDAG &DAG) {
-  return all_of(V->uses(), [&](SDUse &Use) {
-    SDNode *User = Use.getUser();
-    unsigned OperandNo = Use.getOperandNo();
-    return isSignInsensitiveUse(User, OperandNo, DAG);
-  });
-}
 
 static SDValue foldFPToIntToFP(SDNode *N, const SDLoc &DL, SelectionDAG &DAG,
                                const TargetLowering &TLI) {
@@ -18924,7 +18893,7 @@ static SDValue foldFPToIntToFP(SDNode *N, const SDLoc &DL, SelectionDAG &DAG,
   assert(IsSigned || IsUnsigned);
 
   bool IsSignedZeroSafe = DAG.getTarget().Options.NoSignedZerosFPMath ||
-                          allUsesSignInsensitive(SDValue(N, 0), DAG);
+                          DAG.allUsesSignedZeroInsensitive(SDValue(N, 0));
   // For signed conversions: The optimization changes signed zero behavior.
   if (IsSigned && !IsSignedZeroSafe)
     return SDValue();
